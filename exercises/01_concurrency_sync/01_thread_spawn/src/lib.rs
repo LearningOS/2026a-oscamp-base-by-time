@@ -154,10 +154,14 @@ use std::time::Duration;
 /// Hint: Use `thread::spawn` and `move` closure.
 #[allow(unused_variables)]
 pub fn double_in_thread(numbers: Vec<i32>) -> Vec<i32> {
-    // TODO: Create a new thread to multiply each element of numbers by 2
-    // Use thread::spawn and move closure
-    // Use join().unwrap() to get result
-    todo!()
+    let a = thread::spawn(move || {
+        let mut b:Vec<i32> =Vec::new();
+        for i in numbers.into_iter() {
+            b.push(i*2);
+        }
+        b
+    });
+    a.join().unwrap()
 }
 
 /// Sum two vectors in parallel, returning a tuple of two sums.
@@ -165,11 +169,27 @@ pub fn double_in_thread(numbers: Vec<i32>) -> Vec<i32> {
 /// Hint: Create two threads for each vector.
 #[allow(unused_variables)]
 pub fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> (i32, i32) {
-    // TODO: Create two threads to sum a and b respectively
-    // Join both threads to get results
-    todo!()
-}
+    // TODO: 创建两个线程，分别对 a 和 b 求和
+    // join 这两个线程以获取结果
+    let thread1 = thread::spawn(|| {
+        let mut  number1 = 0;
+        for i in a.into_iter() {
+            number1 +=i
+        }
+        number1
+    });
 
+    let therad2 = thread::spawn(|| {
+        let mut number2 = 0;
+        for i in b.into_iter() {
+            number2 += i
+        }
+        number2
+    });
+
+    let tupe1 = (thread1.join().unwrap(), therad2.join().unwrap());
+    tupe1
+}
 // ============================================================================
 // Advanced Exercise Functions
 // ============================================================================
@@ -182,10 +202,23 @@ pub fn parallel_sum(a: Vec<i32>, b: Vec<i32>) -> (i32, i32) {
 /// Hint: `thread::sleep` causes the current thread to block; it does not affect other threads.
 #[allow(unused_variables)]
 pub fn named_sleeper(value: i32, ms: u64) -> i32 {
-    // TODO: Create a thread builder with name "sleeper"
-    // TODO: Spawn a thread that sleeps for `ms` milliseconds and returns `value`
-    // TODO: Join the thread and return the value
-    todo!()
+    // TODO: 创建一个名为 "sleeper" 的线程 builder
+    let builder1 = thread::Builder::new()
+        .name("slepper".into());
+    // TODO: 派生一个休眠 `ms` 毫秒后返回 `value` 的线程
+    let handler1 = builder1.spawn(move ||{
+        thread::sleep(Duration::from_millis(ms));
+        value
+    });
+    // TODO: join 该线程并返回其值
+    let a = match handler1 {
+        Ok(x) => {x.join().unwrap()},
+        Err(x) => {
+            println!("{x:?}");
+            0
+        }
+    };
+    a
 }
 
 thread_local! {
@@ -198,9 +231,15 @@ thread_local! {
 /// Each call to `increment` should increase the thread‑local count by 1 and return the new value.
 ///
 /// Hint: Use `THREAD_COUNT.with(|cell| { ... })` to access the thread‑local variable.
+/// 提示：使用 `THREAD_COUNT.with(|cell| { ... })` 访问该线程本地变量。
 pub fn increment_thread_local() -> usize {
-    // TODO: Use THREAD_COUNT.with to increment and return the new count
-    todo!()
+    // TODO: 使用 THREAD_COUNT.with 递增并返回新的计数
+        let a = THREAD_COUNT.with(|id| {
+            *id.borrow_mut() += 1;
+            id.clone()
+            });
+    let b = a.borrow().clone();
+    b
 }
 
 /// Spawn two threads using a **scoped thread** to compute the sum of two slices without moving ownership.
@@ -213,10 +252,16 @@ pub fn increment_thread_local() -> usize {
 /// making the borrow safe.
 #[allow(unused_variables)]
 pub fn scoped_slice_sum(a: &[i32], b: &[i32]) -> (i32, i32) {
-    // TODO: Use thread::scope to spawn two threads
-    // TODO: Each thread sums its slice
-    // TODO: Wait for both threads and return the results
-    todo!()
+    // TODO: 使用 thread::scope 派生两个线程
+    // TODO: 每个线程对其切片求和
+    // TODO: 等待两个线程并返回结果
+    let (sum_a, sum_b) = thread::scope(|s| {
+        let h1 = s.spawn(|| a.iter().sum::<i32>());
+        let h2 = s.spawn(|| b.iter().sum::<i32>());
+        (h1.join().unwrap(), h2.join().unwrap())
+    });
+
+    (sum_a, sum_b)
 }
 
 /// Handle a possible panic in a spawned thread.
@@ -231,9 +276,16 @@ pub fn scoped_slice_sum(a: &[i32], b: &[i32]) -> (i32, i32) {
 /// In this exercise, the inner type is just `i32`, not a `Result`.
 #[allow(unused_variables)]
 pub fn handle_panic(value: i32, should_panic: bool) -> Result<i32, ()> {
-    // TODO: Spawn a thread that either panics or returns value
-    // TODO: Join and map the result appropriately
-    todo!()
+    // TODO: 派生一个要么 panic 要么返回 value 的线程
+    // TODO: join 并适当地映射结果
+    let handler = thread::spawn(move || {
+        if should_panic {
+            std::result::Result::Err(())
+        } else {
+            std::result::Result::Ok(value)
+        }
+    });
+    handler.join().unwrap()
 }
 
 #[cfg(test)]
